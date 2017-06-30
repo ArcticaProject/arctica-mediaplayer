@@ -1,3 +1,4 @@
 bin/arctica-mediaplayer usr/bin/
-data/lighttpd usr/share/arctica-mediaplayer/
+data/lighttpd/lighttpd.conf usr/share/arctica-mediaplayer/lighttpd/
+data/lighttpd/plain.user var/lib/arctica-mediaplayer/lighttpd/
 data/www var/lib/arctica-mediaplayer/
