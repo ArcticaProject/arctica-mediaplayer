@@ -58,7 +58,7 @@ use strict;
 use Data::Dumper;
 use Cwd 'abs_path';
 use Arctica::Core::eventInit qw(genARandom BugOUT);
-use Arctica::Telekinesis::Application::AppGtk3;
+use Arctica::Telekinesis::Application::Gtk3;
 
 my $ACO = Arctica::Core::eventInit->new({
 	app_name=>'arctica-mediaplayer',
@@ -79,7 +79,7 @@ if (-f $fullpath) {
 }
 print "FUP:\t$fullpath\nLID:\t$link_id\n";
 #die;
-my $TeKiGtk3 = Arctica::Telekinesis::Application::AppGtk3->new($ACO,{
+my $TeKiGtk3 = Arctica::Telekinesis::Application::Gtk3->new($ACO,{
 		services => {
 			multimedia => {
 				conf => {
@@ -143,7 +143,7 @@ $main_window->resize(600,300);
 
 $main_window->show_all();
 
-# We'll wan't to start this within the AppGtk3 thingie... but for now it can stay out here...
+# We'll wan't to start this within the Application::Gtk3 thingie... but for now it can stay out here...
 my $timeout = Glib::Timeout->add(50, sub {$TeKiGtk3->check_n_send();return 1;});
 
 
