@@ -38,6 +38,7 @@ Depends:
  libglib-perl,
  libgtk3-perl,
  libglib-object-introspection-perl,
+ mplayer,
  x11-utils,
  xdotool,
 Description: Arctica Media Player (client-side overlay)
