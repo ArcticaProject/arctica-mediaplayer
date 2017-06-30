@@ -1,0 +1,146 @@
+#!/usr/bin/perl -X -T -I /tekitest/perlmodules
+use strict;
+use Data::Dumper;
+use Arctica::Core::eventInit qw(genARandom BugOUT);
+use Arctica::Core::JABus::Socket;
+use POSIX qw(mkfifo);
+use Gtk3 -init;
+use Glib;
+use Glib::Object::Introspection;
+Glib::Object::Introspection->setup(
+	basename => "GdkX11",
+	version => "3.0",
+	package => "Gtk3::Gdk");
+
+my $MPVO = "x11";
+#my $MPVO = "gl";
+
+my $gnx_xid = `/usr/bin/xwininfo -root -all|/bin/grep NXAgent`;
+if ($gnx_xid =~ /^\s*(0x[0-9a-f]*)\s.*/) {
+        $gnx_xid = $1;
+} else {
+        die;
+}
+
+
+my $lastcontact = time;
+
+my $ACO = Arctica::Core::eventInit->new({
+	app_name=>'forked-overlay-test',
+	app_class =>'amoduletester',
+	app_version=>'0.0.1.1'});
+
+my $app_id = @ARGV[0];
+my $ttid = @ARGV[1];
+my $sock_id;
+my $tmplnkid;
+
+if (@ARGV[2] =~ /^([a-zA-Z0-9]*)$/) {
+	$sock_id = $1;
+	BugOUT(8,"SOC:\t$sock_id");
+} else {die("YOU SOCK!");}
+
+if (@ARGV[3] =~ /^([a-zA-Z0-9]*)$/) {
+        $tmplnkid = $1;
+        BugOUT(8,"TMPLNKID:\t$tmplnkid");
+} else {die("YOU SOCK!");}
+print "YAY WE GOT IT: $tmplnkid\n";
+
+my $TeKi;
+my $window = Gtk3::Window->new('popup');
+$TeKi = Arctica::Core::JABus::Socket->new($ACO,{
+	type	=>	"unix",
+	destination =>	"local", # FIX ME (change to remote!!!)
+	is_client => 1,
+	connect_to => $sock_id,
+	handle_in_dispatch => {
+			chtstate => sub {\&chtargetstate(@_)},
+#			srvcneg => sub {$TeKiClient->c2s_service_neg(@_)},
+#			appctrl => \&teki_client2s_appctrl,
+	},
+	hooks => {
+		on_ready => sub {my_ready($app_id,$ttid);},
+		on_client_errhup => sub {die("\tLOST CONN!\n");},
+	},
+});
+
+print "THEDUMP:\t\n",Dumper($TeKi);
+
+my $timeout = Glib::Timeout->add(1000, sub {
+print "\tTime:\t",time,"\n\tLast:\t$lastcontact\n";
+	if ($lastcontact < (time-60)) {
+		die("We're an orphan?");
+	}
+	return 1;
+});
+
+	
+
+$window->set_title('OVERLAY');
+$window->set_border_width(0);
+$window->resize(600,300);
+my $socket = new Gtk3::Socket;
+$window->add($socket);
+my $xid = $socket->get_id;
+my $xid2 = $window->get_window->get_xid;
+warn("WINXID:\t$xid2");
+system("/usr/bin/xdotool","windowreparent",$xid2,$gnx_xid);
+$window->show_all();
+$window->unmap();
+my $time = time();
+my $SlaveFIFO = "/tmp/mpslave_$time.fifo";
+if (-e $SlaveFIFO) {
+	unlink($SlaveFIFO);
+}
+mkfifo($SlaveFIFO, 0700);
+my  $pid =    open(my $mpFH,"-|",'/usr/bin/mplayer','-slave','-input' ,"file=$SlaveFIFO", '-vo',$MPVO,'-zoom','-framedrop','-fs','-wid',$xid,'-volume','100', '-identify','-idle','-nolirc','-ss','1', "http://username:password\@localhost:9199/thedir/$tmplnkid.lnk","2>&1");
+my $TnW = Glib::IO->add_watch( $mpFH->fileno, 'in', sub {watch_mplayerOutput( $mpFH);});
+#print "MP:$pid\n";
+$ACO->{'Glib'}{'MainLoop'}->run;
+
+sub watch_mplayerOutput {
+	my ($fh,undef) = @_;
+	my $buffer;
+	sysread($fh, $buffer, 4096);
+	print "YALLA:\t$buffer\n";
+}
+
+sub chtargetstate {
+	my $data = $_[0];
+	warn(Dumper($data));
+	my $x = $data->{'apx'};
+	my $y = $data->{'apy'};
+	if ($x and $y) {
+		$window->move($x,$y);
+		$window->resize($data->{'w'},$data->{'h'});
+	}
+	
+	if ($data->{'visible'} eq 1) {
+		if ($x ne 0) {#remove this
+			$window->map();
+		}
+	} else {
+		$window->unmap();
+	}
+}
+
+sub my_ready {
+	BugOUT(8,"MY READY?");
+	my $app_id = $_[0];
+	my $ttid = $_[1];
+	$TeKi->client_send('treg',{
+				app_id => $app_id,
+				ttid => $ttid,
+	});
+}
+
+sub daemonize {
+	fork and exit;
+	POSIX::setsid();
+	fork and exit;
+	umask 0;
+	chdir '/';
+	close STDIN;
+	close STDOUT;
+	close STDERR;
+}

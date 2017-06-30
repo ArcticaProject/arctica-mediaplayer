@@ -1,0 +1,108 @@
+#!/usr/bin/perl -X -T -I /tekitest/perlmodules
+use strict;
+use Data::Dumper;
+use Cwd 'abs_path';
+use Arctica::Core::eventInit qw(genARandom BugOUT);
+use Arctica::Telekinesis::Application::AppGtk3;
+
+my $ACO = Arctica::Core::eventInit->new({
+	app_name=>'telekinesis-test-app',
+	app_class =>'tekiapp',
+	app_version=>'0.0.1.1'});
+
+my $fullpath = abs_path(@ARGV[0]);
+my $link_id;
+if (-f $fullpath) {
+	print "FP: $fullpath\n";
+	if ($fullpath =~ /(.*)/) {
+		$fullpath = $1;
+	}
+	$link_id = time();
+	symlink($fullpath,"/var/lib/arctica-mediaplayer/www/tmp/$link_id.lnk");
+} else {
+	print "PLAY WHAT?!!\n\n";die;
+}
+print "FUP:\t$fullpath\nLID:\t$link_id\n";
+#die;
+my $TeKiGtk3 = Arctica::Telekinesis::Application::AppGtk3->new($ACO,{
+		services => {
+			multimedia => {
+				conf => {
+					files_only => 1,
+				},
+			},
+		},
+	});
+
+LoadCSS();
+my $main_window = Gtk3::Window->new('toplevel');
+$main_window->set_title('TEST WINDOW');
+
+my $window_id = $TeKiGtk3->add_window($main_window);
+my $target_id = $TeKiGtk3->new_target($window_id,"multimedia");
+$TeKiGtk3->{'targets'}{$target_id}{'tmplnkid'} = $link_id;#TMP GARBAGE
+
+
+#my $box = Gtk3::Box->new( 'horizontal', 0 );
+#$window->add($box);
+#$box->show();
+
+my $vBox = Gtk3::Box->new( 'vertical', 0 );
+#$box->add($box1);
+$main_window->add($vBox);
+$vBox->show();
+
+my $menubar = Gtk3::MenuBar->new;
+$vBox->pack_start($menubar, 0, 1, 0 );
+$vBox->pack_start($TeKiGtk3->get_widget($target_id), 1, 1, 0 );
+$menubar->show();
+#my $menu = create_menu(1);
+my $menuitem = Gtk3::MenuItem->new_with_label("File");
+#$menuitem->set_submenu($menu);
+$menubar->append($menuitem);
+$menuitem->show();
+
+my $menuitem = Gtk3::MenuItem->new_with_label("Settings");
+#$menuitem->set_submenu($menu);
+$menubar->append($menuitem);
+$menuitem->show();
+
+my $menuitem = Gtk3::MenuItem->new_with_label("Help");
+#$menuitem->set_submenu($menu);
+$menubar->append($menuitem);
+$menuitem->show();
+
+my $hBox = Gtk3::Box->new( 'horizontal', 10 );
+$vBox->pack_start( $hBox, 0, 1, 0 );
+$hBox->show();
+my $flip_button = Gtk3::Button->new_with_label('Play/Pause');
+$hBox->pack_start( $flip_button, 0, 1, 0 );
+$flip_button->show();
+
+my $close_button = Gtk3::Button->new_with_label('Fullscreen');
+$hBox->pack_start( $close_button, 0, 1, 0 );
+$close_button->show();
+
+$main_window->set_border_width(0);
+$main_window->resize(600,300);
+
+$main_window->show_all();
+
+# We'll wan't to start this within the AppGtk3 thingie... but for now it can stay out here...
+my $timeout = Glib::Timeout->add(50, sub {$TeKiGtk3->check_n_send();return 1;});
+
+
+$ACO->{'Glib'}{'MainLoop'}->run;
+
+
+sub LoadCSS {
+	my $Gtk3_CSS_Provider = Gtk3::CssProvider->new;
+	my $Display = Gtk3::Gdk::Display::get_default();
+	my $Screen = $Display->get_default_screen;
+	$Gtk3_CSS_Provider->load_from_data ([map ord, split //,"GtkSocket{ background-color: #000000;}"]);
+#	Make it easy to see not only TeKi overlay issues but also unavoidable
+#	Gtk3 issues that are most evident on slow systems or systems with artificially induced X latency 
+#	$Gtk3_CSS_Provider->load_from_data ([map ord, split //,"GtkSocket{ background-color: #990000;}\nGtkWindow{background-color: #009900;}"]);
+	
+	Gtk3::StyleContext::add_provider_for_screen( $Screen, $Gtk3_CSS_Provider, Gtk3::STYLE_PROVIDER_PRIORITY_USER);
+}

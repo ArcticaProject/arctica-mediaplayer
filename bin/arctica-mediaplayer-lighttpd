@@ -1,0 +1,2 @@
+#!/bin/sh
+lighttpd -f /usr/share/arctica-mediaplayer/lighttpd/lighttpd.conf
