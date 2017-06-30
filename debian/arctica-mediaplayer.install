@@ -1,0 +1,3 @@
+bin/arctica-mediaplayer usr/bin/
+data/lighttpd usr/share/arctica-mediaplayer/
+data/www var/lib/arctica-mediaplayer/

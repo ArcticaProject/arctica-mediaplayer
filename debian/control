@@ -1,0 +1,49 @@
+Source: arctica-mediaplayer
+Section: perl
+Priority: optional
+Build-Depends:
+ cdbs,
+ debhelper (>= 9),
+Build-Depends-Indep:
+ perl (>= 5.8.0),
+Maintainer: Arctica Project Developers <devs@lists.arctica-project.org>
+Uploaders:
+ Mike Gabriel <mike.gabriel@das-netzwerkteam.de>
+Homepage: https://arctica-project.org/
+Vcs-Git: https://github.com/ArcticaProject/arctica-mediaplayer
+Vcs-mediaplayer: https://github.com/ArcticaProject/arctica-mediaplayer
+Standards-Version: 3.9.8
+
+Package: arctica-mediaplayer
+Architecture: all
+Depends:
+ ${perl:Depends},
+ ${misc:Depends},
+ lighttpd,
+Description: Arctica Media Player
+ The Arctica Project brings forth a remote computing framework of
+ enterprise grade and quality. The Arctica Framework is a highly
+ modularized and thus pluggable for developing alls sort of remote
+ services.
+ .
+ This package provides the Arctica Media Player.
+
+Package: arctica-mediaplayer-overlay
+Architecture: all
+Depends:
+ ${perl:Depends},
+ ${misc:Depends},
+ libarctica-core-perl,
+ libarctica-core-jabus-socket-perl,
+ libglib-perl,
+ libgtk3-perl,
+ libglib-object-introspection-perl,
+ x11-utils,
+ xdotool,
+Description: Arctica Media Player (client-side overlay)
+ The Arctica Project brings forth a remote computing framework of
+ enterprise grade and quality. The Arctica Framework is a highly
+ modularized and thus pluggable for developing alls sort of remote
+ services.
+ .
+ This package provides the client-side overlay for Arctica Media Player.
