@@ -26,9 +26,9 @@ if ($gnx_xid =~ /^\s*(0x[0-9a-f]*)\s.*/) {
 my $lastcontact = time;
 
 my $ACO = Arctica::Core::eventInit->new({
-	app_name=>'forked-overlay-test',
+	app_name=>'arctica-mediaplayer-overlay',
 	app_class =>'amoduletester',
-	app_version=>'0.0.1.1'});
+	app_version=>'0.0.0.1'});
 
 my $app_id = @ARGV[0];
 my $ttid = @ARGV[1];

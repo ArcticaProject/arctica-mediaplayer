@@ -6,9 +6,9 @@ use Arctica::Core::eventInit qw(genARandom BugOUT);
 use Arctica::Telekinesis::Application::AppGtk3;
 
 my $ACO = Arctica::Core::eventInit->new({
-	app_name=>'telekinesis-test-app',
+	app_name=>'arctica-mediaplayer',
 	app_class =>'tekiapp',
-	app_version=>'0.0.1.1'});
+	app_version=>'0.0.0.1'});
 
 my $fullpath = abs_path(@ARGV[0]);
 my $link_id;
