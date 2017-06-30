@@ -18,7 +18,7 @@ if (-f $fullpath) {
 		$fullpath = $1;
 	}
 	$link_id = time();
-	symlink($fullpath,"/var/lib/arctica-mediaplayer/www/tmp/$link_id.lnk");
+	symlink($fullpath,"/var/lib/arctica-mediaplayer/www/private/$link_id.lnk");
 } else {
 	print "PLAY WHAT?!!\n\n";die;
 }
