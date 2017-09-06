@@ -73,12 +73,11 @@ Glib::Object::Introspection->setup(
 	version => "3.0",
 	package => "Gtk3::Gdk");
 
-my $MPVO = "x11";
-#my $MPVO = "gl";
-
-my $gnx_xid = `/usr/bin/xwininfo -root -all|/bin/grep NXAgent`;
-if ($gnx_xid =~ /^\s*(0x[0-9a-f]*)\s.*/) {
-        $gnx_xid = $1;
+#my $MPVO = "x11";
+my $MPVO = "gl";
+my $fmedia_port;
+if ($ENV{'TEKI_FMEDIA_PORT'} =~ /^(\d{1,5})$/) {
+        $fmedia_port = $1;
 } else {
         die;
 }
@@ -95,7 +94,7 @@ my $app_id = @ARGV[0];
 my $ttid = @ARGV[1];
 my $sock_id;
 my $tmplnkid;
-
+my $rwid;
 if (@ARGV[2] =~ /^([a-zA-Z0-9]*)$/) {
 	$sock_id = $1;
 	BugOUT(8,"SOC:\t$sock_id");
@@ -105,10 +104,14 @@ if (@ARGV[3] =~ /^([a-zA-Z0-9]*)$/) {
         $tmplnkid = $1;
         BugOUT(8,"TMPLNKID:\t$tmplnkid");
 } else {die("YOU SOCK!");}
-print "YAY WE GOT IT: $tmplnkid\n";
+
+if (@ARGV[4] =~ /^([a-zA-Z0-9]{5,})$/) {
+        $rwid = $1;
+        BugOUT(8,"TMPLNKID:\t$tmplnkid");
+} else {die("YOU SOCK!");}
+#print "YAY WE GOT IT: $tmplnkid\n";
 
 my $TeKi;
-my $window = Gtk3::Window->new('popup');
 $TeKi = Arctica::Core::JABus::Socket->new($ACO,{
 	type	=>	"unix",
 	destination =>	"local", # FIX ME (change to remote!!!)
@@ -125,11 +128,23 @@ $TeKi = Arctica::Core::JABus::Socket->new($ACO,{
 	},
 });
 
-print "THEDUMP:\t\n",Dumper($TeKi);
+#print "THEDUMP:\t\n",Dumper($TeKi);
+	my $time = time();
+	my $SlaveFIFO = "/tmp/mpslave_$time.fifo";
+	if (-e $SlaveFIFO) {
+		unlink($SlaveFIFO);
+	}
+	mkfifo($SlaveFIFO, 0700);
+	unless (-x '/usr/bin/mplayer') {die('NO /usr/bin/mplayer ?!');}
 
-my $timeout = Glib::Timeout->add(1000, sub {
-print "\tTime:\t",time,"\n\tLast:\t$lastcontact\n";
-	if ($lastcontact < (time-60)) {
+my  $pid =    open(my $mpFH,"-|",'/usr/bin/mplayer','-slave','-input' ,"file=$SlaveFIFO", '-vo',$MPVO,'-zoom','-framedrop','-fs','-wid',$rwid,'-volume','100', '-identify','-idle','-nolirc','-ss','1', "http://localhost:$fmedia_port/$tmplnkid.lnk","2>&1");
+#	my  $pid =    open(my $mpFH,"-|",'/usr/bin/mplayer','-slave','-input' ,"file=$SlaveFIFO", '-vo',$MPVO,'-zoom','-framedrop','-fs','-wid',$rwid,'-volume','100', '-identify','-idle','-nolirc','-ss','1', "/tmp/test.mp4","2>&1");
+	my $TnW = Glib::IO->add_watch( $mpFH->fileno, 'in', sub {watch_mplayerOutput( $mpFH);});
+
+
+my $timeout = Glib::Timeout->add(250, sub {
+#print "\tTime:\t",time,"\n\tLast:\t$lastcontact\n";
+	if ($lastcontact < (time-1)) {
 		die("We're an orphan?");
 	}
 	return 1;
@@ -137,51 +152,36 @@ print "\tTime:\t",time,"\n\tLast:\t$lastcontact\n";
 
 	
 
-$window->set_title('OVERLAY');
-$window->set_border_width(0);
-$window->resize(600,300);
-my $socket = new Gtk3::Socket;
-$window->add($socket);
-my $xid = $socket->get_id;
-my $xid2 = $window->get_window->get_xid;
-warn("WINXID:\t$xid2");
-system("/usr/bin/xdotool","windowreparent",$xid2,$gnx_xid);
-$window->show_all();
-$window->unmap();
-my $time = time();
-my $SlaveFIFO = "/tmp/mpslave_$time.fifo";
-if (-e $SlaveFIFO) {
-	unlink($SlaveFIFO);
-}
-mkfifo($SlaveFIFO, 0700);
-my  $pid =    open(my $mpFH,"-|",'/usr/bin/mplayer','-slave','-input' ,"file=$SlaveFIFO", '-vo',$MPVO,'-zoom','-framedrop','-fs','-wid',$xid,'-volume','100', '-identify','-idle','-nolirc','-ss','1', "http://username:password\@localhost:9199/thedir/$tmplnkid.lnk","2>&1");
-my $TnW = Glib::IO->add_watch( $mpFH->fileno, 'in', sub {watch_mplayerOutput( $mpFH);});
+
 #print "MP:$pid\n";
 $ACO->{'Glib'}{'MainLoop'}->run;
+
+
 
 sub watch_mplayerOutput {
 	my ($fh,undef) = @_;
 	my $buffer;
 	sysread($fh, $buffer, 4096);
-	print "YALLA:\t$buffer\n";
+#	print "YALLA:\t$buffer\n";
 }
 
 sub chtargetstate {
+	$lastcontact = time;
 	my $data = $_[0];
 	warn(Dumper($data));
 	my $x = $data->{'apx'};
 	my $y = $data->{'apy'};
 	if ($x and $y) {
-		$window->move($x,$y);
-		$window->resize($data->{'w'},$data->{'h'});
+#		$window->move($x,$y);
+#		$window->resize($data->{'w'},$data->{'h'});
 	}
 	
 	if ($data->{'visible'} eq 1) {
 		if ($x ne 0) {#remove this
-			$window->map();
+#			$window->map();
 		}
 	} else {
-		$window->unmap();
+#		$window->unmap();
 	}
 }
 

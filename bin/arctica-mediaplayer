@@ -1,5 +1,4 @@
 #!/usr/bin/perl -X -T
-
 ################################################################################
 #          _____ _
 #         |_   _| |_  ___
@@ -65,19 +64,8 @@ my $ACO = Arctica::Core::eventInit->new({
 	app_class =>'tekiapp',
 	app_version=>'0.0.0.1'});
 
-my $fullpath = abs_path(@ARGV[0]);
-my $link_id;
-if (-f $fullpath) {
-	print "FP: $fullpath\n";
-	if ($fullpath =~ /(.*)/) {
-		$fullpath = $1;
-	}
-	$link_id = time();
-	symlink($fullpath,"/var/lib/arctica-mediaplayer/www/private/$link_id.lnk");
-} else {
-	print "PLAY WHAT?!!\n\n";die;
-}
-print "FUP:\t$fullpath\nLID:\t$link_id\n";
+
+#print "FUP:\t$fullpath\nLID:\t$link_id\n";
 #die;
 my $TeKiGtk3 = Arctica::Telekinesis::Application::Gtk3->new($ACO,{
 		services => {
@@ -90,12 +78,28 @@ my $TeKiGtk3 = Arctica::Telekinesis::Application::Gtk3->new($ACO,{
 	});
 
 LoadCSS();
+
+my $fullpath = abs_path(@ARGV[0]);
+my $link_id;
+if (-f $fullpath) {
+#	print "FP: $fullpath\n";
+	if ($fullpath =~ /(.*)/) {
+		$fullpath = $1;
+	} else {
+		die;
+	}
+#	$link_id = time();
+#	symlink($fullpath,"/var/lib/arctica-mediaplayer/www/private/$link_id.lnk");
+} else {
+	print "PLAY WHAT?!!\n\n";die;
+}
+
 my $main_window = Gtk3::Window->new('toplevel');
-$main_window->set_title('TEST WINDOW');
+$main_window->set_title('aTelePlayer');
 
 my $window_id = $TeKiGtk3->add_window($main_window);
-my $target_id = $TeKiGtk3->new_target($window_id,"multimedia");
-$TeKiGtk3->{'targets'}{$target_id}{'tmplnkid'} = $link_id;#TMP GARBAGE
+my $target_id = $TeKiGtk3->new_target($window_id,"multimedia",$fullpath);
+$TeKiGtk3->{'targets'}{$target_id}{'tmplnkid'} = $TeKiGtk3->req_file_forwarding($fullpath);#TMP GARBAGE
 
 
 #my $box = Gtk3::Box->new( 'horizontal', 0 );
@@ -107,36 +111,8 @@ my $vBox = Gtk3::Box->new( 'vertical', 0 );
 $main_window->add($vBox);
 $vBox->show();
 
-my $menubar = Gtk3::MenuBar->new;
-$vBox->pack_start($menubar, 0, 1, 0 );
+
 $vBox->pack_start($TeKiGtk3->get_widget($target_id), 1, 1, 0 );
-$menubar->show();
-#my $menu = create_menu(1);
-my $menuitem = Gtk3::MenuItem->new_with_label("File");
-#$menuitem->set_submenu($menu);
-$menubar->append($menuitem);
-$menuitem->show();
-
-my $menuitem = Gtk3::MenuItem->new_with_label("Settings");
-#$menuitem->set_submenu($menu);
-$menubar->append($menuitem);
-$menuitem->show();
-
-my $menuitem = Gtk3::MenuItem->new_with_label("Help");
-#$menuitem->set_submenu($menu);
-$menubar->append($menuitem);
-$menuitem->show();
-
-my $hBox = Gtk3::Box->new( 'horizontal', 10 );
-$vBox->pack_start( $hBox, 0, 1, 0 );
-$hBox->show();
-my $flip_button = Gtk3::Button->new_with_label('Play/Pause');
-$hBox->pack_start( $flip_button, 0, 1, 0 );
-$flip_button->show();
-
-my $close_button = Gtk3::Button->new_with_label('Fullscreen');
-$hBox->pack_start( $close_button, 0, 1, 0 );
-$close_button->show();
 
 $main_window->set_border_width(0);
 $main_window->resize(600,300);
