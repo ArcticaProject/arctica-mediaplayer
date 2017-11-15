@@ -1,5 +1,4 @@
 #!/usr/bin/perl -X -T
-
 ################################################################################
 #          _____ _
 #         |_   _| |_  ___
@@ -79,7 +78,7 @@ my $fmedia_port;
 if ($ENV{'TEKI_FMEDIA_PORT'} =~ /^(\d{1,5})$/) {
         $fmedia_port = $1;
 } else {
-        die;
+        BugOUT(0,"?");
 }
 
 
@@ -98,17 +97,17 @@ my $rwid;
 if (@ARGV[2] =~ /^([a-zA-Z0-9]*)$/) {
 	$sock_id = $1;
 	BugOUT(8,"SOC:\t$sock_id");
-} else {die("YOU SOCK!");}
+} else {BugOUT(0,"YOU SOCK!");}
 
 if (@ARGV[3] =~ /^([a-zA-Z0-9]*)$/) {
         $tmplnkid = $1;
         BugOUT(8,"TMPLNKID:\t$tmplnkid");
-} else {die("YOU SOCK!");}
+} else {BugOUT(0,"YOU SOCK!");}
 
 if (@ARGV[4] =~ /^([a-zA-Z0-9]{5,})$/) {
         $rwid = $1;
         BugOUT(8,"TMPLNKID:\t$tmplnkid");
-} else {die("YOU SOCK!");}
+} else {BugOUT(0,"YOU SOCK!");}
 #print "YAY WE GOT IT: $tmplnkid\n";
 
 my $TeKi;
@@ -124,7 +123,7 @@ $TeKi = Arctica::Core::JABus::Socket->new($ACO,{
 	},
 	hooks => {
 		on_ready => sub {my_ready($app_id,$ttid);},
-		on_client_errhup => sub {die("\tLOST CONN!\n");},
+		on_client_errhup => sub {BugOUT(0,"\tLOST CONN!\n");},
 	},
 });
 
@@ -135,7 +134,7 @@ $TeKi = Arctica::Core::JABus::Socket->new($ACO,{
 		unlink($SlaveFIFO);
 	}
 	mkfifo($SlaveFIFO, 0700);
-	unless (-x '/usr/bin/mplayer') {die('NO /usr/bin/mplayer ?!');}
+	unless (-x '/usr/bin/mplayer') {BugOUT(0,'NO /usr/bin/mplayer ?!');}
 
 my  $pid =    open(my $mpFH,"-|",'/usr/bin/mplayer','-slave','-input' ,"file=$SlaveFIFO", '-vo',$MPVO,'-zoom','-framedrop','-fs','-wid',$rwid,'-volume','100', '-identify','-idle','-nolirc','-ss','1', "http://localhost:$fmedia_port/$tmplnkid.lnk","2>&1");
 #	my  $pid =    open(my $mpFH,"-|",'/usr/bin/mplayer','-slave','-input' ,"file=$SlaveFIFO", '-vo',$MPVO,'-zoom','-framedrop','-fs','-wid',$rwid,'-volume','100', '-identify','-idle','-nolirc','-ss','1', "/tmp/test.mp4","2>&1");
@@ -144,8 +143,8 @@ my  $pid =    open(my $mpFH,"-|",'/usr/bin/mplayer','-slave','-input' ,"file=$Sl
 
 my $timeout = Glib::Timeout->add(250, sub {
 #print "\tTime:\t",time,"\n\tLast:\t$lastcontact\n";
-	if ($lastcontact < (time-1)) {
-		die("We're an orphan?");
+	if ($lastcontact < (time-3)) {
+		BugOUT(0,"We're an orphan?");
 	}
 	return 1;
 });
